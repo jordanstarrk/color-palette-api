@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { QuantizerCelebi } from '@material/material-color-utilities';
+import cors from 'cors'; 
 
 // Fix for __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +14,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const upload = multer();
 app.use(express.json());
+app.use(cors());
 
 // Serve static files (index.html and related assets)
 app.use(express.static(path.join(__dirname, 'public')));
