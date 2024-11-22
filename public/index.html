@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Color Palette</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    input[type="number"] {
+      width: 80px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #4285f4;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    button:hover {
+      background-color: #357ae8;
+    }
+    img {
+      margin-top: 20px;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(5, 100px);
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .color-box {
+      width: 100px;
+      height: 100px;
+      text-align: center;
+      line-height: 100px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Generate Image Color Palette</h1>
+  <form id="paletteForm">
+    <input type="text" id="imageUrl" placeholder="Enter image URL" required>
+    <input type="number" id="numColors" placeholder="Number of colors" min="1" max="100" value="10" required>
+    <button type="submit">Generate Palette</button>
+  </form>
+  <img id="inputImage" src="" alt="" style="display: none;">
+  <div id="palette" class="palette"></div>
+  <p id="errorMessage" class="error"></p>
+
+  <script>
+    document.getElementById('paletteForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const imageUrl = document.getElementById('imageUrl').value;
+      const numColors = document.getElementById('numColors').value;
+      const paletteDiv = document.getElementById('palette');
+      const errorMessage = document.getElementById('errorMessage');
+      const inputImage = document.getElementById('inputImage');
+
+      // Clear previous results
+      paletteDiv.innerHTML = '';
+      errorMessage.textContent = '';
+      inputImage.style.display = 'none';
+
+      try {
+        // Display the input image
+        inputImage.src = imageUrl;
+        inputImage.style.display = 'block';
+
+        // Fetch the color palette from the API
+        const response = await fetch('http://localhost:3000/generate_palette', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image_url: imageUrl,
+            num_colors: parseInt(numColors, 10),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Render colors
+        if (data.palette && data.palette.length > 0) {
+          data.palette.forEach(color => {
+            const colorBox = document.createElement('div');
+            colorBox.className = 'color-box';
+            colorBox.style.backgroundColor = color;
+            colorBox.textContent = color;
+            paletteDiv.appendChild(colorBox);
+          });
+        } else {
+          errorMessage.textContent = 'No colors were extracted. Try another image.';
+        }
+      } catch (err) {
+        console.error(err);
+        errorMessage.textContent = `Failed to generate palette: ${err.message}`;
+      }
+    });
+  </script>
+</body>
+</html>

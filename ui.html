@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Color Palette</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+    }
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(10, 50px); /* 10 colors per row */
+      gap: 5px;
+    }
+    .color-box {
+      width: 50px;
+      height: 50px;
+      border: 1px solid #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="palette" id="palette"></div>
+
+  <script>
+    // List of HEX colors
+    const colors = [
+      "#07496d", "#1f618b", "#4b6986", "#86a8bc", "#0e3245", "#81a6bd", "#3775a1", "#85a7bd",
+      "#7e8ea5", "#8a8c9c", "#072939", "#8ba8ba", "#84a9bb", "#84aabd", "#86a9bd", "#0c1e25",
+      "#88abbe", "#8babbd", "#b2bbbb", "#d9cbb7", "#d1bd9e", "#bfc0b8", "#d2cfc6", "#dfc49e",
+      "#e8d0ab", "#b7c1c2", "#aab8bb", "#8aacc0", "#8fadbc", "#90afbf", "#90afc2", "#8daec0",
+      "#909ea1", "#93aebc", "#93aab7", "#8dafc1", "#8eafc2", "#0a191f", "#8fb0c3", "#09161a",
+      "#081215", "#060f11", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000",
+      "#90b1c4", "#96b1c2", "#94b2c2", "#a8bcc2", "#c2c6c2", "#ccc8be", "#b1aa9f", "#93b1c2",
+      "#92b0c2", "#91b1c3", "#92b1c3", "#000000", "#98b3be", "#99b6c1", "#a4b9c2", "#f5cf91",
+      "#f2ebdd", "#fce5ac", "#f5bf6f", "#e1b588", "#cabeae", "#acbfc3", "#a1b8c3", "#9db6c2",
+      "#97b4c2", "#99b4c3", "#bba492", "#e7d9c3", "#fafaf4", "#e8e1d5", "#ddd8cd", "#beb6a7",
+      "#a2b5be", "#000000", "#a3aba6", "#9db0ba", "#95b1bd", "#b2b6af", "#a4b1b0", "#9fa29e",
+      "#5185ab", "#6c7a8b", "#000000", "#7391ae", "#8b8386", "#a09198", "#be9985", "#a28e86",
+      "#cca689", "#da9c6e", "#af968e", "#d0b692"
+    ];
+
+    // Filter out pure black colors
+    const filteredColors = colors.filter(color => color !== "#000000");
+
+    // Render the colors in the palette
+    const paletteDiv = document.getElementById("palette");
+    filteredColors.forEach(color => {
+      const colorBox = document.createElement("div");
+      colorBox.className = "color-box";
+      colorBox.style.backgroundColor = color;
+      colorBox.textContent = color;
+      paletteDiv.appendChild(colorBox);
+    });
+  </script>
+</body>
+</html>
