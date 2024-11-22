@@ -13,8 +13,21 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const upload = multer();
+
+// Enable CORS
+app.use(
+    cors({
+        origin: '*', // Replace '*' with your frontend's URL for stricter security
+        methods: ['GET', 'POST', 'OPTIONS'], // Allow specific HTTP methods
+        allowedHeaders: ['Content-Type'], // Allow specific headers
+    })
+);
+
+// Explicitly handle preflight OPTIONS requests
+app.options('*', cors());
+
+// Parse JSON bodies
 app.use(express.json());
-app.use(cors());
 
 // Serve static files (index.html and related assets)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -89,6 +102,12 @@ app.post('/generate_palette', upload.single('image'), async (req, res) => {
     }
 });
 
+// Handle invalid routes
+app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
+// Start the server
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
