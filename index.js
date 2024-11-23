@@ -21,19 +21,10 @@ const corsOptions = {
     origin: "*", 
     methods: ["GET", "POST", "OPTIONS"], 
     allowedHeaders: ["Content-Type", "Authorization"], 
-    credentials: false 
 };
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly
-app.options("*", (req, res) => {
-    res.header("Access-Control-Allow-Origin", "https://color-palette-api-b0xm.onrender.com");
-    res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.sendStatus(204); // Preflight success
-});
-
-// Handle preflight OPTIONS requests globally
+// Explicitly handle preflight OPTIONS requests
 app.options("*", cors(corsOptions));
 
 // Serve static files (like index.html)
@@ -168,6 +159,7 @@ app.post("/generate_palette", upload.none(), async (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`API running on http://localhost:${PORT}`);
+const HOST = "0.0.0.0"; // Bind to all interfaces for Render
+app.listen(PORT, HOST, () => {
+    console.log(`API running on http://0.0.0.0:${PORT}`);
 });
