@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import https from "https";
+import sharp from "sharp";
 import { createCanvas, loadImage } from "canvas";
 import { QuantizerCelebi, Hct } from "@material/material-color-utilities";
 import cors from "cors";
@@ -19,7 +20,10 @@ app.use(cors());
 // Serve static files (like index.html)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Fetch image from URL using https
+// Supported Image Formats
+const SUPPORTED_FORMATS = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+
+// Fetch image from URL
 async function fetchImageFromUrl(imageUrl) {
     return new Promise((resolve, reject) => {
         https.get(imageUrl, (res) => {
@@ -27,7 +31,6 @@ async function fetchImageFromUrl(imageUrl) {
                 reject(new Error(`Failed to fetch image: ${res.statusMessage}`));
                 return;
             }
-
             const chunks = [];
             res.on("data", (chunk) => chunks.push(chunk));
             res.on("end", () => resolve(Buffer.concat(chunks)));
@@ -35,19 +38,37 @@ async function fetchImageFromUrl(imageUrl) {
     });
 }
 
-// Convert image to pixel data
-async function getImagePixelData(imageBuffer) {
-    const canvas = createCanvas(500, 500); // Resize image to a standard size for processing
-    const ctx = canvas.getContext("2d");
+// Convert unsupported formats to PNG
+async function preprocessImage(imageBuffer) {
+    const sharpImage = sharp(imageBuffer);
+    const metadata = await sharpImage.metadata();
 
+    if (!SUPPORTED_FORMATS.includes(`image/${metadata.format}`)) {
+        throw new Error(`Unsupported image format: ${metadata.format}`);
+    }
+
+    // Convert WebP, HEIC, or HEIF to PNG for compatibility with canvas
+    if (["webp", "heic", "heif"].includes(metadata.format)) {
+        return sharpImage.toFormat("png").toBuffer();
+    }
+
+    return imageBuffer; // No conversion needed
+}
+
+// Resize image to a standard size
+async function resizeImage(imageBuffer) {
+    return sharp(imageBuffer).resize({ width: 500 }).toBuffer();
+}
+
+// Extract pixel data
+async function getImagePixelData(imageBuffer) {
     const img = await loadImage(imageBuffer);
-    canvas.width = img.width;
-    canvas.height = img.height;
+    const canvas = createCanvas(img.width, img.height);
+    const ctx = canvas.getContext("2d");
     ctx.drawImage(img, 0, 0);
 
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-    // Convert RGBA to ARGB
     const pixels = [];
     for (let i = 0; i < data.length; i += 4) {
         const opaqueBlack = 0xff000000;
@@ -59,21 +80,35 @@ async function getImagePixelData(imageBuffer) {
     return pixels;
 }
 
-// Quantize and convert to HCT colors
+// Fallback for fewer colors
+function ensurePaletteSize(palette, numColors) {
+    if (palette.length >= numColors) {
+        return palette.slice(0, numColors);
+    }
+
+    const extraColorsNeeded = numColors - palette.length;
+    const extraColors = [];
+
+    // Duplicate existing colors if fewer than needed
+    for (let i = 0; i < extraColorsNeeded; i++) {
+        extraColors.push(palette[i % palette.length]);
+    }
+
+    return [...palette, ...extraColors];
+}
+
+// Generate palette
 async function generatePalette(imageBuffer, numColors = 16) {
     const pixelData = await getImagePixelData(imageBuffer);
 
-    // Quantize the colors
     const quantizedColors = QuantizerCelebi.quantize(pixelData, 256); // Quantize to a larger color pool
-
-    // Filter and extract the top `numColors` colors
     const palette = [];
-    let seenHues = new Set();
+    const seenHues = new Set();
 
     for (const [argb] of quantizedColors) {
         const hctColor = Hct.fromInt(argb);
 
-        // Ensure unique hues by filtering near-duplicate hues
+        // Ensure unique hues by filtering similar hues
         if (!Array.from(seenHues).some(hue => Math.abs(hue - hctColor.hue) < 10)) {
             seenHues.add(hctColor.hue);
             palette.push({
@@ -83,26 +118,28 @@ async function generatePalette(imageBuffer, numColors = 16) {
                 tone: hctColor.tone
             });
 
-            // Stop when we reach the requested number of colors
             if (palette.length >= numColors) break;
         }
     }
 
-    return palette;
+    return ensurePaletteSize(palette, numColors); // Ensure we always return `numColors`
 }
 
+// API Endpoint
 app.post("/generate_palette", upload.none(), async (req, res) => {
     try {
         const imageUrl = req.body.image_url;
-        const numColors = parseInt(req.body.num_colors || 16, 10); // Default to 16 colors
+        const numColors = parseInt(req.body.num_colors || 16, 10);
 
         if (!imageUrl) {
             return res.status(400).json({ error: "Image URL is required." });
         }
 
-        const imageBuffer = await fetchImageFromUrl(imageUrl);
-        const palette = await generatePalette(imageBuffer, numColors);
+        let imageBuffer = await fetchImageFromUrl(imageUrl);
+        imageBuffer = await preprocessImage(imageBuffer);
+        imageBuffer = await resizeImage(imageBuffer);
 
+        const palette = await generatePalette(imageBuffer, numColors);
         res.json({ palette });
     } catch (err) {
         console.error(`Error during palette generation: ${err.message}`);
