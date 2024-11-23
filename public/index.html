@@ -41,7 +41,7 @@
     }
     img {
       margin-top: 20px;
-      max-width: 100%;
+      max-width: 300px; /* Fixed size for web */
       height: auto;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -73,9 +73,41 @@
       margin-top: 10px;
     }
     .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       margin-top: 20px;
-      font-size: 18px;
-      color: #333;
+    }
+    /* Spinner styles */
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 6px solid transparent; /* Transparent border */
+      border-top: 6px solid #8e44ad; /* Purple */
+      border-right: 6px solid #2980b9; /* Blue */
+      border-bottom: 6px solid #27ae60; /* Green */
+      border-left: 6px solid #f39c12; /* Orange */
+      border-radius: 50%; /* Full circle */
+      animation: spin 1.2s linear infinite; /* Smooth spinning */
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Text animation for loading message */
+    .loading-text {
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #555;
+      animation: fade 2s infinite ease-in-out;
+    }
+
+    @keyframes fade {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
     .error {
       color: red;
@@ -91,7 +123,10 @@
     <button type="submit">Generate Palette</button>
   </form>
   <img id="inputImage" src="" alt="" style="display: none;">
-  <div id="loading" class="loading" style="display: none;">Generating palette, please wait...</div>
+  <div id="loading" class="loading" style="display: none;">
+    <div class="spinner"></div>
+    <div class="loading-text">Generating palette, please wait...</div>
+  </div>
   <div id="palette" class="palette"></div>
   <p id="errorMessage" class="error"></p>
 
@@ -110,7 +145,7 @@
       paletteDiv.innerHTML = '';
       errorMessage.textContent = '';
       inputImage.style.display = 'none';
-      loadingText.style.display = 'block';
+      loadingText.style.display = 'flex';
 
       try {
         // Display the input image
