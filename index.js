@@ -18,14 +18,16 @@ app.use(express.json());
 
 // CORS Configuration
 const corsOptions = {
-    origin: "*", // Allow all origins (can restrict to specific front-end URL later)
+    origin: "*", // Allow all origins for now
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     allowedHeaders: ["Content-Type", "Authorization"],
-    preflightContinue: false,
+    preflightContinue: true,
     optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
 
+// Handle preflight OPTIONS requests globally
+app.options("*", cors(corsOptions));
 
 // Serve static files (like index.html)
 app.use(express.static(path.join(__dirname, "public")));
