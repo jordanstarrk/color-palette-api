@@ -11,7 +11,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Create an Express app
 const app = express();
 const upload = multer();
 app.use(express.json());
@@ -92,7 +91,6 @@ async function generatePalette(imageBuffer, numColors = 16) {
     return palette;
 }
 
-// API Endpoint
 app.post("/generate_palette", upload.none(), async (req, res) => {
     try {
         const imageUrl = req.body.image_url;
