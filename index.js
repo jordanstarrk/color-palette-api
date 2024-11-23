@@ -15,7 +15,17 @@ const __dirname = dirname(__filename);
 const app = express();
 const upload = multer();
 app.use(express.json());
-app.use(cors());
+
+// CORS Configuration
+const corsOptions = {
+    origin: "*", // Allow all origins (can restrict to specific front-end URL later)
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: ["Content-Type", "Authorization"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+};
+app.use(cors(corsOptions));
+
 
 // Serve static files (like index.html)
 app.use(express.static(path.join(__dirname, "public")));
