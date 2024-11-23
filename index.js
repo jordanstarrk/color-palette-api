@@ -18,13 +18,20 @@ app.use(express.json());
 
 // CORS Configuration
 const corsOptions = {
-    origin: "*", // Allow all origins for now
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    allowedHeaders: ["Content-Type", "Authorization"],
-    preflightContinue: true,
-    optionsSuccessStatus: 204
+    origin: "*", 
+    methods: ["GET", "POST", "OPTIONS"], 
+    allowedHeaders: ["Content-Type", "Authorization"], 
+    credentials: false 
 };
 app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options("*", (req, res) => {
+    res.header("Access-Control-Allow-Origin", "https://color-palette-api-b0xm.onrender.com");
+    res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.sendStatus(204); // Preflight success
+});
 
 // Handle preflight OPTIONS requests globally
 app.options("*", cors(corsOptions));
