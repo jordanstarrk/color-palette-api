@@ -1,3 +1,4 @@
+// Import dependencies
 import express from "express";
 import multer from "multer";
 import https from "https";
@@ -19,14 +20,20 @@ app.use(express.json());
 
 // CORS Configuration
 const corsOptions = {
-    origin: "*", 
-    methods: ["GET", "POST", "OPTIONS"], 
-    allowedHeaders: ["Content-Type", "Authorization"], 
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
 
 // Explicitly handle preflight OPTIONS requests
 app.options("*", cors(corsOptions));
+
+// Add Content Security Policy middleware
+app.use((req, res, next) => {
+    res.setHeader("Content-Security-Policy", "default-src 'self'; img-src 'self' https:; script-src 'self'; style-src 'self' 'unsafe-inline';");
+    next();
+});
 
 // Serve static files (like index.html)
 app.use(express.static(path.join(__dirname, "public")));
@@ -112,7 +119,6 @@ function ensurePaletteSize(palette, numColors) {
 async function generatePalette(imageBuffer, numColors = 16) {
     const pixelData = await getImagePixelData(imageBuffer);
 
-    // Quantize colors to get a larger color pool and population data
     const quantizedColors = QuantizerCelebi.quantize(pixelData, 256); // Quantize to a larger color pool
     const palette = [];
     const seenHues = new Set();
@@ -120,39 +126,41 @@ async function generatePalette(imageBuffer, numColors = 16) {
     for (const [argb, population] of quantizedColors) {
         const hctColor = Hct.fromInt(argb);
 
-        // Ensure unique hues by filtering similar hues
         if (!Array.from(seenHues).some(hue => Math.abs(hue - hctColor.hue) < 10)) {
             seenHues.add(hctColor.hue);
 
-            // Convert HCT to sRGB using @colorjs.io/color
             const srgbColor = new Color("hct", [hctColor.hue, hctColor.chroma, hctColor.tone]).to("srgb");
 
-            // Normalize RGB values to [0, 255]
             const [r, g, b] = srgbColor.coords.map(channel => Math.min(Math.max(Math.round(channel * 255), 0), 255));
 
             palette.push({
-                hex: srgbColor.toString({ format: "hex" }), // HEX value
-                red: r, // Correctly normalized red
-                green: g, // Correctly normalized green
-                blue: b, // Correctly normalized blue
-                population // Include population in the result
+                hex: srgbColor.toString({ format: "hex" }),
+                red: r,
+                green: g,
+                blue: b,
+                population
             });
 
             if (palette.length >= numColors) break;
         }
     }
 
-    return ensurePaletteSize(palette, numColors); // Ensure we always return `numColors`
+    return ensurePaletteSize(palette, numColors);
 }
 
-// API Endpoint
+// API Endpoint with Input Validation
 app.post("/generate_palette", upload.none(), async (req, res) => {
     try {
         const imageUrl = req.body.image_url;
         const numColors = parseInt(req.body.num_colors || 16, 10);
 
-        if (!imageUrl) {
-            return res.status(400).json({ error: "Image URL is required." });
+        // Input validation
+        if (!imageUrl || !/^https?:\/\/[^\s/$.?#].[^\s]*$/.test(imageUrl)) {
+            return res.status(400).json({ error: "Invalid image URL." });
+        }
+        
+        if (isNaN(numColors) || numColors < 1 || numColors > 100) {
+            return res.status(400).json({ error: "Invalid number of colors. Must be between 1 and 100." });
         }
 
         let imageBuffer = await fetchImageFromUrl(imageUrl);
