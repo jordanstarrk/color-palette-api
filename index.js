@@ -7,6 +7,7 @@ import { QuantizerCelebi, Hct } from "@material/material-color-utilities";
 import cors from "cors";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+import Color from "colorjs.io";
 
 // Fix for __dirname in ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -121,11 +122,15 @@ async function generatePalette(imageBuffer, numColors = 16) {
         // Ensure unique hues by filtering similar hues
         if (!Array.from(seenHues).some(hue => Math.abs(hue - hctColor.hue) < 10)) {
             seenHues.add(hctColor.hue);
+
+            // Convert HCT to sRGB using @colorjs.io/color
+            const srgbColor = new Color("hct", [hctColor.hue, hctColor.chroma, hctColor.tone]);
+
             palette.push({
-                hex: `#${argb.toString(16).slice(2)}`,
-                hue: hctColor.hue,
-                chroma: hctColor.chroma,
-                tone: hctColor.tone
+                hex: srgbColor.to("srgb").toString({ format: "hex" }),
+                red: Math.round(srgbColor.coords[0] * 255), // Normalize to [0, 255]
+                green: Math.round(srgbColor.coords[1] * 255),
+                blue: Math.round(srgbColor.coords[2] * 255)
             });
 
             if (palette.length >= numColors) break;
