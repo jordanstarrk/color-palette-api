@@ -112,11 +112,12 @@ function ensurePaletteSize(palette, numColors) {
 async function generatePalette(imageBuffer, numColors = 16) {
     const pixelData = await getImagePixelData(imageBuffer);
 
+    // Quantize colors to get a larger color pool and population data
     const quantizedColors = QuantizerCelebi.quantize(pixelData, 256); // Quantize to a larger color pool
     const palette = [];
     const seenHues = new Set();
 
-    for (const [argb] of quantizedColors) {
+    for (const [argb, population] of quantizedColors) {
         const hctColor = Hct.fromInt(argb);
 
         // Ensure unique hues by filtering similar hues
@@ -124,13 +125,17 @@ async function generatePalette(imageBuffer, numColors = 16) {
             seenHues.add(hctColor.hue);
 
             // Convert HCT to sRGB using @colorjs.io/color
-            const srgbColor = new Color("hct", [hctColor.hue, hctColor.chroma, hctColor.tone]);
+            const srgbColor = new Color("hct", [hctColor.hue, hctColor.chroma, hctColor.tone]).to("srgb");
+
+            // Normalize RGB values to [0, 255]
+            const [r, g, b] = srgbColor.coords.map(channel => Math.min(Math.max(Math.round(channel * 255), 0), 255));
 
             palette.push({
-                hex: srgbColor.to("srgb").toString({ format: "hex" }),
-                red: Math.round(srgbColor.coords[0] * 255), // Normalize to [0, 255]
-                green: Math.round(srgbColor.coords[1] * 255),
-                blue: Math.round(srgbColor.coords[2] * 255)
+                hex: srgbColor.toString({ format: "hex" }), // HEX value
+                red: r, // Correctly normalized red
+                green: g, // Correctly normalized green
+                blue: b, // Correctly normalized blue
+                population // Include population in the result
             });
 
             if (palette.length >= numColors) break;
