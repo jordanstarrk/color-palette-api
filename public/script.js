@@ -20,8 +20,7 @@ document.getElementById('paletteForm').addEventListener('submit', async function
     inputImage.style.display = 'block';
 
     // Fetch the color palette from the API
-    // const response = await fetch('https://color-palette-api-b0xm.onrender.com/generate_palette', {
-    const response = await fetch('http://localhost:3000/generate_palette', {
+    const response = await fetch('https://color-palette-api-b0xm.onrender.com/generate_palette', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
