@@ -44,17 +44,18 @@ const SUPPORTED_FORMATS = ["image/jpeg", "image/png", "image/webp", "image/heic"
 // Fetch image from URL
 async function fetchImageFromUrl(imageUrl) {
     return new Promise((resolve, reject) => {
-        https.get(imageUrl, (res) => {
-            if (res.statusCode !== 200) {
-                reject(new Error(`Failed to fetch image: ${res.statusMessage}`));
-                return;
-            }
-            const chunks = [];
-            res.on("data", (chunk) => chunks.push(chunk));
-            res.on("end", () => resolve(Buffer.concat(chunks)));
-        }).on("error", (err) => reject(err));
+      https.get(imageUrl, (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`Failed to fetch image. Status: ${res.statusCode}, Message: ${res.statusMessage}`));
+          return;
+        }
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+      }).on("error", (err) => reject(new Error(`Error fetching image: ${err.message}`)));
     });
-}
+  }
+  
 
 // Convert unsupported formats to PNG
 async function preprocessImage(imageBuffer) {
@@ -154,15 +155,14 @@ app.post("/generate_palette", upload.none(), async (req, res) => {
         const imageUrl = req.body.image_url;
         const numColors = parseInt(req.body.num_colors || 16, 10);
 
-        // Input validation
-        if (!imageUrl || !/^https?:\/\/[^\s/$.?#].[^\s]*$/.test(imageUrl)) {
-            return res.status(400).json({ error: "Invalid image URL." });
+        if (!imageUrl) {
+            return res.status(400).json({ error: "Image URL is required." });
         }
-        
+    
+        // Validate `num_colors` only
         if (isNaN(numColors) || numColors < 1 || numColors > 100) {
             return res.status(400).json({ error: "Invalid number of colors. Must be between 1 and 100." });
         }
-
         let imageBuffer = await fetchImageFromUrl(imageUrl);
         imageBuffer = await preprocessImage(imageBuffer);
         imageBuffer = await resizeImage(imageBuffer);

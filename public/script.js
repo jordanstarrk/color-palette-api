@@ -36,7 +36,6 @@ document.getElementById('paletteForm').addEventListener('submit', async function
     }
 
     const data = await response.json();
-
     loadingText.style.display = 'none';
 
     // Render colors
